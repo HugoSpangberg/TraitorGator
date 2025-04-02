@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TraitorGator.API\TraitorGator.API.csproj" />
+    <ProjectReference Include="..\TraitorGator.Data\TraitorGator.Data.csproj" />
+    <ProjectReference Include="..\TraitorGator.Models\TraitorGator.Models.csproj" />
+    <ProjectReference Include="..\TraitorGator.Services\TraitorGator.Services.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35919.96
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraitorGator.API", "TraitorGator.API\TraitorGator.API.csproj", "{84918B61-9952-42B6-8F33-0669DF563632}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraitorGator.Models", "TraitorGator.Models\TraitorGator.Models.csproj", "{B189D581-F7E8-46E6-B514-7FFCFFA78322}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraitorGator.Data", "TraitorGator.Data\TraitorGator.Data.csproj", "{C9E677BF-EF31-4DE1-B516-CC61548D1A42}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraitorGator.Services", "TraitorGator.Services\TraitorGator.Services.csproj", "{6EF3C6EF-6543-4626-B4FF-B7B2E3B990C7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraitorGator.Client", "TraitorGator.Client\TraitorGator.Client.csproj", "{E5F38964-EDD6-4B7D-B0FA-AABC5CCEDDA2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{84918B61-9952-42B6-8F33-0669DF563632}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84918B61-9952-42B6-8F33-0669DF563632}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84918B61-9952-42B6-8F33-0669DF563632}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84918B61-9952-42B6-8F33-0669DF563632}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B189D581-F7E8-46E6-B514-7FFCFFA78322}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B189D581-F7E8-46E6-B514-7FFCFFA78322}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B189D581-F7E8-46E6-B514-7FFCFFA78322}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B189D581-F7E8-46E6-B514-7FFCFFA78322}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9E677BF-EF31-4DE1-B516-CC61548D1A42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9E677BF-EF31-4DE1-B516-CC61548D1A42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9E677BF-EF31-4DE1-B516-CC61548D1A42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9E677BF-EF31-4DE1-B516-CC61548D1A42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6EF3C6EF-6543-4626-B4FF-B7B2E3B990C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6EF3C6EF-6543-4626-B4FF-B7B2E3B990C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6EF3C6EF-6543-4626-B4FF-B7B2E3B990C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6EF3C6EF-6543-4626-B4FF-B7B2E3B990C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E5F38964-EDD6-4B7D-B0FA-AABC5CCEDDA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5F38964-EDD6-4B7D-B0FA-AABC5CCEDDA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5F38964-EDD6-4B7D-B0FA-AABC5CCEDDA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5F38964-EDD6-4B7D-B0FA-AABC5CCEDDA2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {15063709-B1F2-45C8-8903-000A9751FC00}
+	EndGlobalSection
+EndGlobal
