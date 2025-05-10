@@ -7,4 +7,5 @@ public interface IGameService
     Task<GameRound> CreateGameRoundAsync();
     Task<GameRound?> GetGameRoundByIdAsync(Guid gameRoundId);
     Task<GameRound?> GetGameRoundByCodeAsync(string gameCode);
+    Task<bool> StartGameAsync(string gameCode);
 }

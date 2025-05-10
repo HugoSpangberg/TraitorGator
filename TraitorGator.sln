@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraitorGator.Services", "Tr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraitorGator.Client", "TraitorGator.Client\TraitorGator.Client.csproj", "{E5F38964-EDD6-4B7D-B0FA-AABC5CCEDDA2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraitorGator.Shared", "TraitorGator.Shared\TraitorGator.Shared.csproj", "{DEA6A08A-4090-449F-AE3B-C21719D08C20}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{E5F38964-EDD6-4B7D-B0FA-AABC5CCEDDA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E5F38964-EDD6-4B7D-B0FA-AABC5CCEDDA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E5F38964-EDD6-4B7D-B0FA-AABC5CCEDDA2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DEA6A08A-4090-449F-AE3B-C21719D08C20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEA6A08A-4090-449F-AE3B-C21719D08C20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEA6A08A-4090-449F-AE3B-C21719D08C20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEA6A08A-4090-449F-AE3B-C21719D08C20}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
