@@ -10,9 +10,11 @@ public class GameRound
     public DateTime StartTime { get; set; }
     public TimeSpan Duration { get; set; }
     public bool IsComplete { get; set; }
-    public List<Player> Players { get; set; } = new List<Player>();
+    public bool Started { get; set; }
+    public Guid? CurrentQuestionId { get; set; }
+    public Question? CurrentQuestion { get; set; }
+    public List<Player> Players { get; set; } = new();
     public int CurrentRound { get; set; } = 1;
-    public List<Question> Questions { get; set; } = new();
     public Guid? TraitorId { get; set; }
     public Player? Traitor { get; set; }
 }

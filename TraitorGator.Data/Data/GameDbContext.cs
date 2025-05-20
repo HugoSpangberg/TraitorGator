@@ -15,6 +15,14 @@ namespace TraitorGator.API.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Player>()
+                .HasOne(p => p.GameRound)
+                .WithMany(gr => gr.Players)
+                .HasForeignKey(p => p.GameRoundId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<GameRound>()
                 .HasOne(gr => gr.Traitor)
                 .WithMany()
@@ -32,8 +40,6 @@ namespace TraitorGator.API.Data
                 .WithMany()
                 .HasForeignKey(a => a.QuestionId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            base.OnModelCreating(modelBuilder);
         }
     }
 }

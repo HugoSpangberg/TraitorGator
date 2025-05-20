@@ -1,12 +1,9 @@
 ﻿@page "/lobby/{GameCode}/{PlayerId:guid}"
 @rendermode InteractiveServer
-@implements IDisposable
+@implements IAsyncDisposable
 
 @using System.Threading
-@using System.Text.Json
-@using System.Text.Json.Serialization
 @using TraitorGator.API.Models
-@using TraitorGator.Shared.Dtos
 @inject HttpClient Http
 @inject NavigationManager NavManager
 
@@ -15,7 +12,7 @@
 
 @if (currentGame == null)
 {
-    <p>Laddar lobby…</p>
+    <p>Laddar lobby …</p>
 }
 else
 {
@@ -25,93 +22,123 @@ else
         {
             <li class="list-group-item">@p.Username (@p.Role)</li>
         }
-        
     </ul>
 
     @if (!gameStarted)
     {
-        <button class="btn btn-success" @onclick="OnStartGame">Starta spelet</button>
+        @if (IsCreator)
+        {
+            <button class="btn btn-success" @onclick="OnStartGame">Starta spelet</button>
+        }
+        else
+        {
+            <p>Väntar på att skaparen startar spelet…</p>
+        }
     }
 }
 
-// Rutan som visar din roll
 @if (showRoleModal)
 {
     <div class="modal-backdrop fade show"></div>
     <div class="modal fade show d-block" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content p-4 text-center">
-          <h4>Din roll är:</h4>
-          <p class="fs-2">@userRole</p>
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-4 text-center">
+                <h4>Din roll är:</h4>
+                <p class="fs-2">@userRole</p>
+            </div>
         </div>
-      </div>
     </div>
 }
 
 @code {
-    [Parameter] public string  GameCode   { get; set; }
-    [Parameter] public Guid    PlayerId   { get; set; }
+    [Parameter] public string GameCode { get; set; }
+    [Parameter] public Guid PlayerId { get; set; }
 
     private GameRound currentGame;
-    private Timer     pollTimer;
-    private bool      gameStarted   = false;
-    private bool      showRoleModal = false;
+    private CancellationTokenSource _cts = new();
+    private bool gameStarted = false;
+    private bool showRoleModal = false;
     private string userRole;
-    private const int RequiredPlayerCount = 3; // minst 3
+
+    private bool IsCreator =>
+        currentGame?.Players?.FirstOrDefault()?.Id == PlayerId;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadGameAsync();
-        pollTimer = new Timer(async _ =>
-        {
-            if (!gameStarted)
-            {
-                await LoadGameAsync();
-                await InvokeAsync(StateHasChanged);
-            }
-        }, null, 0, 5000);
+        await RefreshLobbyAsync();
+
+        _ = PollLobbyAsync(_cts.Token);
     }
 
-    private async Task LoadGameAsync()
+    private async Task PollLobbyAsync(CancellationToken ct)
     {
-        currentGame = await Http.GetFromJsonAsync<GameRound>(
-            $"api/game/{GameCode}",
-            new JsonSerializerOptions
+        try
+        {
+            while (!ct.IsCancellationRequested)
             {
-                ReferenceHandler = ReferenceHandler.Preserve,
-                PropertyNameCaseInsensitive = true
-            });
+                await Task.Delay(TimeSpan.FromSeconds(5), ct);
+                await RefreshLobbyAsync();
+
+                if (!gameStarted && currentGame?.Started == true)
+                {
+                    gameStarted = true;
+                    await InvokeAsync(HandleGameStartAsync);
+                }
+
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Polling Error: {ex}");
+        }
+    }
+
+    private async Task RefreshLobbyAsync()
+    {
+        try
+        {
+            currentGame = await Http.GetFromJsonAsync<GameRound>($"api/game/{GameCode}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"LoadGameAsync Error: {ex}");
+        }
     }
 
     private async Task OnStartGame()
     {
-        // 1) Starta spelet (assign roles)
-        var start = await Http.PostAsync($"api/game/{GameCode}/start", null);
-        if (!start.IsSuccessStatusCode)
+        var res = await Http.PostAsync($"api/game/{GameCode}/start", null);
+        if (res.IsSuccessStatusCode)
         {
-            // Hantera fel t.ex. för få spelare
-            return;
         }
-        gameStarted = true;
+        else
+        {
+            Console.WriteLine("Kunde inte starta spelet");
+        }
+    }
 
-        // 2) Läs din roll från servern
-        var player = await Http.GetFromJsonAsync<Player>(
-            $"api/players/{PlayerId}",
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+    private async Task HandleGameStartAsync()
+    {
+        var me = await Http.GetFromJsonAsync<Player>($"api/players/{PlayerId}");
+        userRole = me?.Role.ToString() ?? "Okänd";
 
-        userRole = player.Role.ToString();
-
-        // 3) Visa modalen i 6 sekunder
         showRoleModal = true;
         await InvokeAsync(StateHasChanged);
         await Task.Delay(6000);
-
         showRoleModal = false;
         await InvokeAsync(StateHasChanged);
 
-        // 4) Navigera vidare till spelsidan
         NavManager.NavigateTo($"/play/{GameCode}/{PlayerId}");
     }
 
-    public void Dispose() => pollTimer?.Dispose();
+    public ValueTask DisposeAsync()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+        return ValueTask.CompletedTask;
+    }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TraitorGator.API.Data;
 
@@ -11,9 +12,11 @@ using TraitorGator.API.Data;
 namespace TraitorGator.Data.Migrations
 {
     [DbContext(typeof(GameDbContext))]
-    partial class GameDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250518113355_AddStarterGame")]
+    partial class AddStarterGame
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -26,9 +29,6 @@ namespace TraitorGator.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CurrentQuestionId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("CurrentRound")
@@ -57,8 +57,6 @@ namespace TraitorGator.Data.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CurrentQuestionId");
 
                     b.HasIndex("TraitorId");
 
@@ -129,6 +127,9 @@ namespace TraitorGator.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("GameRoundId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("QuestionType")
                         .HasColumnType("int");
 
@@ -141,21 +142,17 @@ namespace TraitorGator.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("GameRoundId");
+
                     b.ToTable("Questions");
                 });
 
             modelBuilder.Entity("TraitorGator.API.Models.GameRound", b =>
                 {
-                    b.HasOne("TraitorGator.Models.Models.Question", "CurrentQuestion")
-                        .WithMany()
-                        .HasForeignKey("CurrentQuestionId");
-
                     b.HasOne("TraitorGator.API.Models.Player", "Traitor")
                         .WithMany()
                         .HasForeignKey("TraitorId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("CurrentQuestion");
 
                     b.Navigation("Traitor");
                 });
@@ -190,9 +187,18 @@ namespace TraitorGator.Data.Migrations
                     b.Navigation("Question");
                 });
 
+            modelBuilder.Entity("TraitorGator.Models.Models.Question", b =>
+                {
+                    b.HasOne("TraitorGator.API.Models.GameRound", null)
+                        .WithMany("Questions")
+                        .HasForeignKey("GameRoundId");
+                });
+
             modelBuilder.Entity("TraitorGator.API.Models.GameRound", b =>
                 {
                     b.Navigation("Players");
+
+                    b.Navigation("Questions");
                 });
 #pragma warning restore 612, 618
         }

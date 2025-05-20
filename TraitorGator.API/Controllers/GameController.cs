@@ -37,7 +37,7 @@ public class GameController(IGameService gameService, IPlayerService playerServi
     public async Task<IActionResult> StartGame(string gameCode)
     {
         var ok = await _gameService.StartGameAsync(gameCode);
-        return ok ? Ok() : BadRequest("För få spelare för att starta");
+        return ok ? Ok() : BadRequest("För få spelare för att starta.");
     }
 }
 

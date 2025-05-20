@@ -1,0 +1,73 @@
+﻿@page "/play/{GameCode}/{PlayerId:guid}"
+@using TraitorGator.API.Models
+@using TraitorGator.Models.Dto
+@using TraitorGator.Shared.Dtos
+@inject HttpClient Http
+@inject NavigationManager NavManager
+
+<h1>Runda @currentRound</h1>
+
+@if (question == null)
+{
+    <p>Laddar fråga…</p>
+}
+else if (!answered)
+{
+    <p>@question.Text</p>
+    <textarea @bind="answerText" class="form-control mb-2" rows="3" />
+    <button class="btn btn-primary" @onclick="SubmitAnswer">Skicka</button>
+    <p>Återstående tid: @remainingSeconds s</p>
+}
+else
+{
+    <p>Tack! Vänta på övriga…</p>
+}
+
+@code {
+    [Parameter] 
+    public string GameCode { get; set; }
+    [Parameter] 
+    public Guid PlayerId { get; set; }
+
+    private QuestionForPlayerDto question;
+    private bool answered;
+    private string answerText;
+    private int remainingSeconds = 30;
+    private int currentRound;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Hämta rundans info
+        var round = await Http.GetFromJsonAsync<GameRound>($"api/game/{GameCode}");
+        currentRound = round.CurrentRound;
+
+        // Hämta dynamisk fråga (sparas på servern)
+        var uri = $"api/gameplay/{GameCode}/question?playerId={PlayerId}";
+        question = await Http.GetFromJsonAsync<QuestionForPlayerDto>(uri);
+
+        _ = CountdownAsync();
+    }
+
+    private async Task CountdownAsync()
+    {
+        while (remainingSeconds-- > 0)
+        {
+            await Task.Delay(1000);
+            await InvokeAsync(StateHasChanged);
+        }
+        if (!answered) await SubmitAnswer();
+    }
+
+    private async Task SubmitAnswer()
+    {
+        answered = true;
+        var req = new SubmitAnswerRequest
+            {
+                PlayerId = PlayerId,
+                QuestionId = question.QuestionId,
+                AnswerText = answerText ?? ""
+            };
+        await Http.PostAsJsonAsync("api/answers/submit", req);
+        NavManager.NavigateTo($"/results/{GameCode}");
+    }
+}

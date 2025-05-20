@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\TraitorGator.Data\TraitorGator.Data.csproj" />
     <ProjectReference Include="..\TraitorGator.Models\TraitorGator.Models.csproj" />
+    <ProjectReference Include="..\TraitorGator.Shared\TraitorGator.Shared.csproj" />
   </ItemGroup>
 
 </Project>
