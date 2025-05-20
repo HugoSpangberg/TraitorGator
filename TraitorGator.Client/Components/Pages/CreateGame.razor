@@ -2,28 +2,29 @@
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using TraitorGator.API.Models
-@using TraitorGator.Shared.Dtos   @* Gemensamt DTO-bibliotek *@
-@using TraitorGator.Models         @* Delade modeller för GameRound, Player, etc. *@
+@using TraitorGator.Shared.Dtos
+@using TraitorGator.Models
 @inject HttpClient Http
 @inject NavigationManager NavManager
 @rendermode InteractiveServer
 
-<h1>Skapa Spel</h1>
+<div class="d-flex vh-100 align-items-center justify-content-center">
+    <div class="text-center" style="max-width:360px; width:100%;">
+        <h1 class="display-6 mb-3">Skapa nytt spel</h1>
+        <div class="mb-3 text-start">
+            <input id="username" class="form-control form-control-lg" @bind="createRequest.Username" placeholder="Ditt användarnamn" />
+        </div>
 
-<div class="mb-3">
-    <label for="username" class="form-label">Användarnamn</label>
-    <input id="username"
-           class="form-control"
-           @bind="createRequest.Username"
-           placeholder="Skriv ditt användarnamn" />
+        <button class="btn btn-primary btn-lg w-100 mb-3" @onclick="CreateGameTG">Skapa spel</button>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger text-start">
+                @errorMessage
+            </div>
+        }
+    </div>
 </div>
-
-<button class="btn btn-primary" @onclick="CreateGameTG">Skapa spel</button>
-
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="alert alert-danger mt-2">@errorMessage</div>
-}
 
 @code {
     private CreateGameRequest createRequest = new();

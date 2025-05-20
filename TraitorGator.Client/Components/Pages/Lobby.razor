@@ -7,35 +7,54 @@
 @inject HttpClient Http
 @inject NavigationManager NavManager
 
-<h1>Spellobby</h1>
-<p>Game Code: <strong>@GameCode</strong></p>
+<div class="d-flex vh-100 align-items-center justify-content-center lobby-container">
+    <div class="text-center p-4 rounded-3 shadow-sm bg-dark text-light" style="max-width:500px;width:100%">
 
-@if (currentGame == null)
-{
-    <p>Laddar lobby …</p>
-}
-else
-{
-    <h3>Spelare i lobbyn:</h3>
-    <ul class="list-group mb-3">
-        @foreach (var p in currentGame.Players)
-        {
-            <li class="list-group-item">@p.Username (@p.Role)</li>
-        }
-    </ul>
+        <h1 class="mb-3">Spellobby</h1>
 
-    @if (!gameStarted)
-    {
-        @if (IsCreator)
+        <div class="mb-4">
+            <p class="mb-1">Game Code:</p>
+            <div class="d-flex justify-content-center code-box">
+                @foreach (var c in GameCode)
+                {
+                    <span class="digit-box">@c</span>
+                }
+            </div>
+        </div>
+
+        @if (currentGame == null)
         {
-            <button class="btn btn-success" @onclick="OnStartGame">Starta spelet</button>
+            <p>Laddar lobby …</p>
         }
         else
         {
-            <p>Väntar på att skaparen startar spelet…</p>
+            <h5 class="mb-2">Spelare:</h5>
+            <ul class="list-group mb-4">
+                @foreach (var p in currentGame.Players)
+                {
+                    <li class="list-group-item bg-secondary bg-opacity-10 border-0">
+                        @p.Username (@p.Role)
+                    </li>
+                }
+            </ul>
+
+            @if (!gameStarted)
+            {
+                @if (IsCreator)
+                {
+                    <button class="btn btn-success btn-lg w-100" @onclick="OnStartGame">
+                        Starta spelet
+                    </button>
+                }
+                else
+                {
+                    <p class="fst-italic">Väntar på att skaparen startar spelet…</p>
+                }
+            }
         }
-    }
-}
+
+    </div>
+</div>
 
 @if (showRoleModal)
 {
@@ -44,7 +63,7 @@ else
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content p-4 text-center">
                 <h4>Din roll är:</h4>
-                <p class="fs-2">@userRole</p>
+                <p class="fs-1 text-primary">@userRole</p>
             </div>
         </div>
     </div>
