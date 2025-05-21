@@ -3,7 +3,7 @@ namespace TraitorGator.Models.Models
 {
     public enum PlayerRole
     {
-        Normal,
+        Gator,
         Traitor
     }
 

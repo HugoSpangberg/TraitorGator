@@ -69,7 +69,6 @@ namespace TraitorGator.Services.Services
             if (player == null)
                 throw new Exception("Player not in game");
 
-            // 1) Bestäm vilken QuestionType vi ska plocka från
             QuestionType wantedType = round.Mode switch
             {
                 GameMode.Standard => QuestionType.Quiz,
@@ -77,59 +76,87 @@ namespace TraitorGator.Services.Services
                 _ => throw new Exception("Okänt spelläge")
             };
 
-            // 2) Hämta alla frågor av rätt typ
-            var candidates = await _context.Questions
-                .Where(q => q.QuestionType == wantedType)
-                .ToListAsync();
+            var candidates = await _context.Questions.Where(q => q.QuestionType == wantedType).ToListAsync();
 
             if (!candidates.Any())
                 throw new Exception("Inga frågor definierade för detta spelläge");
 
-            // 3) Slumpa en enda fråga (om det inte redan finns en sparad)
-            Question q;
+            Question question;
             if (!round.CurrentQuestionId.HasValue)
             {
-                var rnd = new Random();
-                q = candidates[rnd.Next(candidates.Count)];
-                round.CurrentQuestionId = q.Id;
+                var random = new Random();
+                question = candidates[random.Next(candidates.Count)];
+                round.CurrentQuestionId = question.Id;
                 await _context.SaveChangesAsync();
             }
             else
             {
-                q = await _context.Questions.FindAsync(round.CurrentQuestionId.Value)
-                    ?? throw new Exception("Sparad fråga saknas i databasen");
+                question = await _context.Questions.FindAsync(round.CurrentQuestionId.Value) ?? throw new Exception("Sparad fråga saknas i databasen");
             }
 
-            // 4) Returnera alteredText för traitor, text för gator
-            var text = player.Role == PlayerRole.Traitor
-                ? q.AlteredText
-                : q.Text;
+            var text = player.Role == PlayerRole.Traitor ? question.AlteredText : question.Text;
 
             return new QuestionForPlayerDto
             {
-                QuestionId = q.Id,
+                QuestionId = question.Id,
                 Text = text
             };
         }
 
 
-        public async Task<IEnumerable<AnswerResultDto>> GetAnswersForGameAsync(string gameCode)
+        public async Task<IEnumerable<AnswerResultDto>> GetAnswersForGameAsync(string gameCode, int round)
         {
-            var currentRound = await _context.GameRounds
-                .Where(gr => gr.GameCode == gameCode)
-                .Select(gr => gr.CurrentRound)
-                .FirstOrDefaultAsync();
+            var gr = await _context.GameRounds
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.GameCode == gameCode);
+            if (gr == null)
+                throw new Exception("Game round not found");
+
+            if (!gr.CurrentQuestionId.HasValue)
+                throw new Exception("No question selected for this round");
+
+            var questionId = gr.CurrentQuestionId.Value;
 
             var answers = await _context.Answers
                 .Include(a => a.Player)
-                .Where(a => a.Question.RoundNumber == currentRound)
+                .Where(a => a.QuestionId == questionId)
                 .ToListAsync();
 
             return answers.Select(a => new AnswerResultDto
             {
-                Username = a.Player.Username,
+                Username   = a.Player.Username,
                 AnswerText = a.AnswerText
             });
+        }
+        public async Task<IEnumerable<AnswerResultDto>> GetAnswersForGameAsync(string gameCode)
+        {
+            var gr = await _context.GameRounds
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.GameCode == gameCode);
+
+            if (gr == null)
+                throw new Exception("Game round not found");
+
+            return await GetAnswersForGameAsync(gameCode, gr.CurrentRound);
+        }
+
+        public async Task<QuestionDetailDto?> GetQuestionDetailAsync(string gameCode, int round)
+        {
+            var gr = await _context.GameRounds
+                .Include(g => g.CurrentQuestion)
+                .FirstOrDefaultAsync(g => g.GameCode == gameCode);
+
+            if (gr == null || gr.CurrentQuestion == null)
+                return null;
+
+            if (gr.CurrentRound != round)
+                return null;
+
+            return new QuestionDetailDto
+            {
+                Text = gr.CurrentQuestion.Text,
+                AlteredText = gr.CurrentQuestion.AlteredText
+            };
         }
     }
 }

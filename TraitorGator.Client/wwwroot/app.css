@@ -47,8 +47,81 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 
+.lobby-container {
+    background: var(--bs-body-bg);
+}
 
 
+.code-box {
+    gap: 0.5rem;
+}
+
+.digit-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin: 0 0.2rem;
+    background-color: #2a2a2a;
+    color: ##ececec;
+    font-size: 1.25rem;
+    border-radius: 0.25rem;
+    box-shadow: 0 0 6px var(--bs-primary);
+}
+
+
+.list-group-item {
+    font-family: 'Segoe UI', sans-serif;
+}
+
+
+.modal-content {
+    background-color: #1f1f1f;
+    color: #ececec;
+    border: none;
+    border-radius: 0.75rem;
+}
+.play-container {
+    background: var(--bs-body-bg);
+}
+
+.play-container .card {
+    border: none;
+    border-radius: 0.75rem;
+}
+
+.play-container .fs-5 {
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.play-container textarea {
+    border: 1px solid #444;
+    resize: none;
+}
+
+.play-container textarea:focus {
+    box-shadow: 0 0 6px var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.play-container .btn-primary {
+    box-shadow: 0 0 10px var(--bs-primary);
+}
+
+.timer-badge {
+    background-color: var(--bs-secondary);
+    color: #121212;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.play-container ::placeholder {
+    color: #bbbbbb;
+    opacity: 1;
+}
 
 h1:focus {
     outline: none;

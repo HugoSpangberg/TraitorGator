@@ -1,0 +1,66 @@
+﻿@page "/results/{GameCode}/{RoundNumber:int}"
+@rendermode InteractiveServer
+@using TraitorGator.Models.Dto
+@using TraitorGator.Shared.Dtos
+@inject HttpClient Http
+@inject NavigationManager NavManager
+
+<div class="d-flex vh-100 align-items-center justify-content-center play-container">
+    <div class="card bg-dark text-light p-4 shadow-sm" style="width: 100%; max-width: 600px;">
+
+        <h2 class="text-center text-light mb-5">Resultat Runda @RoundNumber</h2>
+
+        @if (results == null)
+        {
+            <p class="text-center">Laddar resultat…</p>
+        }
+        else
+        {
+            <div class="mb-4 mt-6">
+                <h5 class="text-center">Frågetext (Gator):</h5>
+                <p class="text-center">@normalText</p>
+                <h5 class="mt-3 text-center">Frågetext (traitor):</h5>
+                <p class="text-center">@traitorText</p>
+            </div>
+
+            <h5>Svar från spelare:</h5>
+            <ul class="list-group">
+                @foreach (var r in results)
+                {
+                    <li class="list-group-item bg-secondary bg-opacity-10 border-0">
+                        <strong>@r.Username:</strong> @r.AnswerText
+                    </li>
+                }
+            </ul>
+
+            <button class="btn btn-secondary mt-4 w-100" @onclick="GoToLobby">
+                Tillbaka till lobby
+            </button>
+        }
+
+    </div>
+</div>
+
+@code {
+    [Parameter] 
+    public string GameCode { get; set; }
+    [Parameter] 
+    public int RoundNumber { get; set; }
+
+    private IEnumerable<AnswerResultDto> results;
+    private string normalText, traitorText;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        results = await Http.GetFromJsonAsync<IEnumerable<AnswerResultDto>>($"api/gameplay/results?gameCode={GameCode}&round={RoundNumber}");
+
+        var qdetails = await Http.GetFromJsonAsync<QuestionDetailDto>($"api/gameplay/questionDetail?gameCode={GameCode}&round={RoundNumber}");
+
+        normalText = qdetails.Text;
+        traitorText = qdetails.AlteredText;
+    }
+
+    private void GoToLobby() =>
+      NavManager.NavigateTo($"/lobby/{GameCode}");
+}

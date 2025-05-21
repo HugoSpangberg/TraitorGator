@@ -1,34 +1,40 @@
 ﻿@page "/join-game"
 @rendermode InteractiveServer
 @using TraitorGator.API.Models
-@using TraitorGator.Shared.Dtos    @* Gemensamma DTO:er *@
+@using TraitorGator.Shared.Dtos
 @inject HttpClient Http
 @inject NavigationManager NavManager
 
-<h1>Gå med i spel</h1>
+<div class="d-flex vh-100 align-items-center justify-content-center join-container">
+    <div class="card bg-dark text-light p-4 shadow-sm" style="width: 100%; max-width: 450px;">
+        <h2 class="display-10 text-center mb-4">Gå med i spel</h2>
 
-<div class="mb-3">
-    <label for="gameCode" class="form-label">Game Code</label>
-    <input id="gameCode"
-           class="form-control"
-           @bind="joinRequest.GameCode"
-           placeholder="Ange game code" />
+        <div class="mb-3">
+            <input id="gameCode"
+                   class="form-control bg-opacity-10 text-light form-control-lg"
+                   @bind="joinRequest.GameCode"
+                   placeholder="Spelkod" />
+        </div>
+
+        <div class="mb-3">
+            <input id="username"
+                   class="form-control bg-opacity-10 text-light form-control-lg"
+                   @bind="joinRequest.Username"
+                   placeholder="Användarnamn" />
+        </div>
+
+        <button class="btn btn-primary w-100 mb-2" @onclick="JoinGameTG">
+            Gå med i spel
+        </button>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-2 text-center">
+                @errorMessage
+            </div>
+        }
+    </div>
 </div>
-
-<div class="mb-3">
-    <label for="username" class="form-label">Användarnamn</label>
-    <input id="username"
-           class="form-control"
-           @bind="joinRequest.Username"
-           placeholder="Ange användarnamn" />
-</div>
-
-<button class="btn btn-primary" @onclick="JoinGameTG">Gå med i spel</button>
-
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="alert alert-danger mt-2">@errorMessage</div>
-}
 
 @code {
     private JoinGameRequest joinRequest = new();
@@ -38,27 +44,22 @@
     {
         errorMessage = null;
 
-        // Grundläggande validering
         if (string.IsNullOrWhiteSpace(joinRequest.GameCode) ||
             string.IsNullOrWhiteSpace(joinRequest.Username))
         {
-            errorMessage = "Båda fälten (game code och användarnamn) måste fyllas i.";
+            errorMessage = "Båda fälten (Spelkod och användarnamn) måste fyllas i.";
             return;
         }
 
-        // Skicka join-anropet
         var response = await Http.PostAsJsonAsync("api/game/join", joinRequest);
         if (!response.IsSuccessStatusCode)
         {
             var body = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Fel vid join: {response.StatusCode}\n{body}");
-            errorMessage = "Kunde inte gå med i spelet. Kontrollera game code och försök igen.";
+            errorMessage = "Kunde inte gå med i spelet. Kontrollera Spelkod och försök igen.";
             return;
         }
 
-        // Vid lyckat join: hämta Player och navigera
         var player = await response.Content.ReadFromJsonAsync<Player>();
-        // joinRequest.GameCode finns fortfarande tillgänglig här
         NavManager.NavigateTo($"/lobby/{joinRequest.GameCode}/{player.Id}");
     }
 }

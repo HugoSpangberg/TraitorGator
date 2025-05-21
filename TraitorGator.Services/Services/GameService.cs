@@ -21,7 +21,7 @@ namespace TraitorGator.Services
             {
                 GameCode = GenerateGameCode(),
                 StartTime = DateTime.UtcNow,
-                Duration = TimeSpan.FromMinutes(30),
+                Duration = TimeSpan.FromMinutes(5),
                 IsComplete = false
             };
 
@@ -64,7 +64,7 @@ namespace TraitorGator.Services
             foreach (var p in round.Players)
                 p.Role = traitors.Contains(p)
                     ? PlayerRole.Traitor
-                    : PlayerRole.Normal;
+                    : PlayerRole.Gator;
 
             round.Started = true;
 

@@ -10,4 +10,7 @@ public interface IQuestionService
     Task<Answer> SubmitAnswerAsync(SubmitAnswerRequest request);
     Task<QuestionForPlayerDto> GetQuestionForPlayerAsync(string gameCode, Guid playerId);
     Task<IEnumerable<AnswerResultDto>> GetAnswersForGameAsync(string gameCode);
+    Task<IEnumerable<AnswerResultDto>> GetAnswersForGameAsync(string gameCode, int round);
+    Task<QuestionDetailDto?> GetQuestionDetailAsync(string gameCode, int round);
+
 }
