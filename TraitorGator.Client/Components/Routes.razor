@@ -4,6 +4,11 @@
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
     <NotFound>
-        <p>Sorry, there's nothing at this address.</p>
+        <main class="screen screen--center">
+            <section class="panel panel--narrow">
+                <h1>Sidan finns inte</h1>
+                <a class="button button--secondary" href="/">Till startsidan</a>
+            </section>
+        </main>
     </NotFound>
 </Router>

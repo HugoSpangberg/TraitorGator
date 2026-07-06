@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using TraitorGator.Models.Dto;
+using Microsoft.AspNetCore.Mvc;
 using TraitorGator.Services.Interfaces;
+using TraitorGator.Shared.Dtos;
 
 namespace TraitorGator.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class AnswersController : Controller
+public class AnswersController : ControllerBase
 {
     private readonly IQuestionService _questionService;
 
@@ -16,16 +16,21 @@ public class AnswersController : Controller
     }
 
     [HttpPost("submit")]
-    public async Task<IActionResult> SubmitAnswer([FromBody] SubmitAnswerRequest request)
+    public async Task<ActionResult<AnswerResultDto>> SubmitAnswer([FromBody] SubmitAnswerRequest request)
     {
         try
         {
-            var answer = await _questionService.SubmitAnswerAsync(request);
-            return Ok(answer);
+            return Ok(await _questionService.SubmitAnswerAsync(request));
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return ex switch
+            {
+                KeyNotFoundException => NotFound(ex.Message),
+                UnauthorizedAccessException => Unauthorized(ex.Message),
+                ArgumentException or InvalidOperationException => BadRequest(ex.Message),
+                _ => Problem(ex.Message)
+            };
         }
     }
 }

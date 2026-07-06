@@ -1,124 +1,216 @@
-﻿@page "/play/{GameCode}/{PlayerId:guid}"
+@page "/play/{GameCode}/{PlayerId:guid}/{PlayerSecret}"
 @rendermode InteractiveServer
+@implements IDisposable
 
-@using TraitorGator.API.Models
-@using TraitorGator.Models.Dto
+@using System.Threading
 @using TraitorGator.Shared.Dtos
 @inject HttpClient Http
 @inject NavigationManager NavManager
 
-<div class="d-flex vh-100 align-items-center justify-content-center play-container">
-    <div class="card bg-dark text-light p-4 shadow-sm" style="width: 100%; max-width: 500px;">
-
-        <h2 class="card-title text-center mb-3">Runda @currentRound</h2>
+<main class="screen screen--center">
+    <section class="panel panel--play">
+        <div class="panel-header">
+            <div>
+                <p class="eyebrow">Runda @currentRound</p>
+                <h1>Svara diskret</h1>
+            </div>
+            <div class="timer">@remainingSeconds</div>
+        </div>
 
         @if (question == null)
         {
-            <p class="text-center">Laddar fråga…</p>
-        }
-        else if (!answered)
-        {
-            <div class="mb-3">
-                <p class="fs-5">@question.Text</p>
-            </div>
-
-            <textarea @bind="answerText"
-                      class="form-control bg-secondary bg-opacity-10 text-light mb-3"
-                      rows="4"
-                      placeholder="Skriv ditt svar här..."></textarea>
-
-            <div class="d-flex justify-content-between align-items-center">
-                <button class="btn btn-primary" @onclick="SubmitAnswer">
-                    Skicka
-                </button>
-                <span class="timer-badge">@remainingSeconds s</span>
-            </div>
+            <p class="muted">Laddar fråga...</p>
         }
         else
         {
-            <p class="text-center fst-italic">Tack! Vänta på övriga…</p>
-        }
+            <article class="question-card">
+                <p>@question.Text</p>
+            </article>
 
-    </div>
-</div>
-
-@code {
-    [Parameter] 
-    public string GameCode { get; set; }
-    [Parameter] 
-    public Guid PlayerId { get; set; }
-
-    private QuestionForPlayerDto question;
-    private int currentRound;
-    private bool answered;
-    private int remainingSeconds;
-    private string answerText;
-
-    private Timer countdownTimer;
-    private Timer pollAnswersTimer;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var round = await Http.GetFromJsonAsync<GameRound>($"api/game/{GameCode}");
-        currentRound = round.CurrentRound;
-        remainingSeconds = (int)round.Duration.TotalSeconds;
-
-        question = await Http.GetFromJsonAsync<QuestionForPlayerDto>($"api/gameplay/{GameCode}/question?playerId={PlayerId}");
-
-        countdownTimer = new Timer(_ =>
-        {
-            if (remainingSeconds > 0)
+            @if (!answered)
             {
-                remainingSeconds--;
-                InvokeAsync(StateHasChanged);
+                <label class="field">
+                    <span>Ditt svar</span>
+                    <textarea @bind="answerText" @bind:event="oninput" maxlength="500" rows="5" placeholder="Skriv ett svar gruppen kan diskutera..."></textarea>
+                </label>
+
+                <button class="button button--primary button--full" disabled="@submitting" @onclick="() => SubmitAnswerAsync(false)">
+                    @(submitting ? "Skickar..." : "Skicka svar")
+                </button>
             }
             else
             {
-                answered = true;
-                InvokeAsync(StateHasChanged);
-                countdownTimer.Dispose();
+                <div class="status-box">
+                    <h2>Svar skickat</h2>
+                    <p>Väntar på resten av gruppen. Resultatet öppnas automatiskt.</p>
+                </div>
+            }
+        }
+
+        @if (progress != null)
+        {
+            <p class="muted">@progress.AnswersSubmitted av @progress.PlayerCount svar inne.</p>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <p class="alert alert--error">@errorMessage</p>
+        }
+    </section>
+</main>
+
+@code {
+    [Parameter] public string GameCode { get; set; } = string.Empty;
+    [Parameter] public Guid PlayerId { get; set; }
+    [Parameter] public string PlayerSecret { get; set; } = string.Empty;
+
+    private QuestionForPlayerDto? question;
+    private RoundProgressDto? progress;
+    private int currentRound = 1;
+    private bool answered;
+    private bool submitting;
+    private int remainingSeconds;
+    private string answerText = string.Empty;
+    private string? errorMessage;
+    private Timer? countdownTimer;
+    private Timer? pollAnswersTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var state = await Http.GetFromJsonAsync<GameStateDto>($"api/game/{GameCode}");
+            answered = state?.Players.FirstOrDefault(p => p.Id == PlayerId)?.HasAnswered == true;
+
+            question = await LoadQuestionAsync();
+            currentRound = question?.RoundNumber ?? state?.CurrentRound ?? 1;
+            remainingSeconds = question?.DurationSeconds ?? state?.DurationSeconds ?? 90;
+            progress = await Http.GetFromJsonAsync<RoundProgressDto>($"api/gameplay/{GameCode}/progress?round={currentRound}");
+
+            if (answered)
+            {
                 StartPollingAnswers();
             }
-        }, null, 1000, 1000);
+            else
+            {
+                StartCountdown();
+            }
+        }
+        catch (HttpRequestException)
+        {
+            errorMessage = "Kunde inte ladda rundan. Kontrollera att API:t körs.";
+        }
     }
 
-    private async Task SubmitAnswer()
+    private async Task<QuestionForPlayerDto?> LoadQuestionAsync()
     {
-        if (string.IsNullOrWhiteSpace(answerText))
-            return;
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"api/gameplay/{GameCode}/question?playerId={PlayerId}");
+        request.Headers.Add("X-Player-Secret", PlayerSecret);
+        using var response = await Http.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+        {
+            errorMessage = await ReadErrorAsync(response, "Kunde inte hämta frågan.");
+            return null;
+        }
 
-        var payload = new SubmitAnswerRequest
+        return await response.Content.ReadFromJsonAsync<QuestionForPlayerDto>();
+    }
+
+    private void StartCountdown()
+    {
+        countdownTimer?.Dispose();
+        countdownTimer = new Timer(_ => _ = InvokeAsync(TickCountdownAsync), null, 1000, 1000);
+    }
+
+    private async Task TickCountdownAsync()
+    {
+        if (answered)
+        {
+            countdownTimer?.Dispose();
+            return;
+        }
+
+        remainingSeconds = Math.Max(remainingSeconds - 1, 0);
+        if (remainingSeconds == 0)
+        {
+            countdownTimer?.Dispose();
+            await SubmitAnswerAsync(autoSubmit: true);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SubmitAnswerAsync(bool autoSubmit)
+    {
+        if (submitting || answered || question == null)
+        {
+            return;
+        }
+
+        var text = autoSubmit ? "(inget svar)" : answerText.Trim();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            errorMessage = "Skriv ett svar innan du skickar.";
+            return;
+        }
+
+        submitting = true;
+        errorMessage = null;
+        try
+        {
+            var payload = new SubmitAnswerRequest
             {
                 PlayerId = PlayerId,
+                PlayerSecret = PlayerSecret,
                 QuestionId = question.QuestionId,
-                AnswerText = answerText
+                AnswerText = text
             };
 
-        var res = await Http.PostAsJsonAsync("api/answers/submit", payload);
-        if (res.IsSuccessStatusCode)
-        {
+            var response = await Http.PostAsJsonAsync("api/answers/submit", payload);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ReadErrorAsync(response, "Kunde inte skicka svaret.");
+                return;
+            }
+
             answered = true;
             countdownTimer?.Dispose();
             StartPollingAnswers();
+        }
+        finally
+        {
+            submitting = false;
         }
     }
 
     private void StartPollingAnswers()
     {
-        pollAnswersTimer = new Timer(async _ =>
+        if (pollAnswersTimer != null)
         {
-            var answers = await Http.GetFromJsonAsync<IEnumerable<AnswerResultDto>>(
-                $"api/gameplay/{GameCode}/answers");
+            return;
+        }
 
-            var round = await Http.GetFromJsonAsync<GameRound>($"api/game/{GameCode}");
-            if (answers.Count() >= round.Players.Count)
-            {
-                pollAnswersTimer.Dispose();
-                await InvokeAsync(() =>
-                    NavManager.NavigateTo($"/results/{GameCode}/{currentRound}")
-                );
-            }
-        }, null, 2000, 2000);
+        pollAnswersTimer = new Timer(_ => _ = InvokeAsync(PollAnswersAsync), null, 0, 2000);
+    }
+
+    private async Task PollAnswersAsync()
+    {
+        progress = await Http.GetFromJsonAsync<RoundProgressDto>($"api/gameplay/{GameCode}/progress?round={currentRound}");
+        if (progress?.AllAnswered == true)
+        {
+            pollAnswersTimer?.Dispose();
+            pollAnswersTimer = null;
+            NavManager.NavigateTo($"/results/{GameCode}/{PlayerId}/{PlayerSecret}/{currentRound}");
+            return;
+        }
+
+        StateHasChanged();
+    }
+
+    private static async Task<string> ReadErrorAsync(HttpResponseMessage response, string fallback)
+    {
+        var body = (await response.Content.ReadAsStringAsync()).Trim().Trim('"');
+        return string.IsNullOrWhiteSpace(body) ? fallback : body;
     }
 
     public void Dispose()

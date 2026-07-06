@@ -1,13 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using TraitorGator.API.Data;
-using TraitorGator.Services;
 using TraitorGator.Services.Interfaces;
+using TraitorGator.Services;
 using TraitorGator.Services.Services;
 
-
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
 
 builder.Services.AddControllers()
      .AddJsonOptions(options =>
@@ -15,27 +12,70 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.WriteIndented = true;
      });
+
+var databaseProvider = builder.Configuration["Database:Provider"] ?? "Sqlite";
 builder.Services.AddDbContext<GameDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    if (databaseProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+    {
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+            ?? "Data Source=traitorgator.db";
+        options.UseSqlite(connectionString);
+    }
+    else
+    {
+        throw new InvalidOperationException($"Okänd databasprovider: {databaseProvider}");
+    }
+});
+
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+if (allowedOrigins.Length > 0 || builder.Environment.IsDevelopment())
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("Client", policy =>
+        {
+            if (allowedOrigins.Length > 0)
+            {
+                policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
+            }
+            else
+            {
+                policy
+                    .SetIsOriginAllowed(origin =>
+                        Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
+                        (uri.Host == "localhost" || uri.Host == "127.0.0.1"))
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            }
+        });
+    });
+}
+
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<IQuestionService, QuestionService>();
 
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.Logger.LogInformation("Initializing TraitorGator database.");
+    var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
+    await db.Database.EnsureCreatedAsync();
+    await GameSeedData.EnsureSeededAsync(db);
+    app.Logger.LogInformation("TraitorGator database is ready.");
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+if (allowedOrigins.Length > 0 || app.Environment.IsDevelopment())
+{
+    app.UseCors("Client");
+}
 
 app.UseAuthorization();
 

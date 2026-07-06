@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TraitorGator.API\TraitorGator.API.csproj" />
-    <ProjectReference Include="..\TraitorGator.Data\TraitorGator.Data.csproj" />
-    <ProjectReference Include="..\TraitorGator.Models\TraitorGator.Models.csproj" />
-    <ProjectReference Include="..\TraitorGator.Services\TraitorGator.Services.csproj" />
     <ProjectReference Include="..\TraitorGator.Shared\TraitorGator.Shared.csproj" />
   </ItemGroup>
 

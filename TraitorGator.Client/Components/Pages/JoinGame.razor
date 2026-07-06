@@ -1,65 +1,83 @@
-﻿@page "/join-game"
-@rendermode InteractiveServer
-@using TraitorGator.API.Models
+@page "/join-game"
 @using TraitorGator.Shared.Dtos
 @inject HttpClient Http
 @inject NavigationManager NavManager
+@rendermode InteractiveServer
 
-<div class="d-flex vh-100 align-items-center justify-content-center join-container">
-    <div class="card bg-dark text-light p-4 shadow-sm" style="width: 100%; max-width: 450px;">
-        <h2 class="display-10 text-center mb-4">Gå med i spel</h2>
+<main class="screen screen--center">
+    <section class="panel panel--narrow">
+        <a class="back-link" href="/">Tillbaka</a>
+        <h1>Gå med</h1>
 
-        <div class="mb-3">
-            <input id="gameCode"
-                   class="form-control bg-opacity-10 text-light form-control-lg"
-                   @bind="joinRequest.GameCode"
-                   placeholder="Spelkod" />
-        </div>
+        <label class="field">
+            <span>Spelkod</span>
+            <input class="code-input" @bind="joinRequest.GameCode" @bind:event="oninput" maxlength="8" placeholder="0000" />
+        </label>
 
-        <div class="mb-3">
-            <input id="username"
-                   class="form-control bg-opacity-10 text-light form-control-lg"
-                   @bind="joinRequest.Username"
-                   placeholder="Användarnamn" />
-        </div>
+        <label class="field">
+            <span>Namn</span>
+            <input @bind="joinRequest.Username" @bind:event="oninput" maxlength="24" placeholder="Ditt användarnamn" />
+        </label>
 
-        <button class="btn btn-primary w-100 mb-2" @onclick="JoinGameTG">
-            Gå med i spel
+        <button class="button button--primary button--full" disabled="@isLoading" @onclick="JoinGameTG">
+            @(isLoading ? "Går med..." : "Gå med i lobby")
         </button>
 
-        @if (!string.IsNullOrEmpty(errorMessage))
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
         {
-            <div class="alert alert-danger mt-2 text-center">
-                @errorMessage
-            </div>
+            <p class="alert alert--error">@errorMessage</p>
         }
-    </div>
-</div>
+    </section>
+</main>
 
 @code {
-    private JoinGameRequest joinRequest = new();
-    private string errorMessage;
+    private readonly JoinGameRequest joinRequest = new();
+    private string? errorMessage;
+    private bool isLoading;
 
     private async Task JoinGameTG()
     {
         errorMessage = null;
+        joinRequest.GameCode = joinRequest.GameCode.Trim().ToUpperInvariant();
 
-        if (string.IsNullOrWhiteSpace(joinRequest.GameCode) ||
-            string.IsNullOrWhiteSpace(joinRequest.Username))
+        if (string.IsNullOrWhiteSpace(joinRequest.GameCode) || string.IsNullOrWhiteSpace(joinRequest.Username))
         {
-            errorMessage = "Båda fälten (Spelkod och användarnamn) måste fyllas i.";
+            errorMessage = "Både spelkod och användarnamn måste fyllas i.";
             return;
         }
 
-        var response = await Http.PostAsJsonAsync("api/game/join", joinRequest);
-        if (!response.IsSuccessStatusCode)
+        isLoading = true;
+        try
         {
-            var body = await response.Content.ReadAsStringAsync();
-            errorMessage = "Kunde inte gå med i spelet. Kontrollera Spelkod och försök igen.";
-            return;
-        }
+            var response = await Http.PostAsJsonAsync("api/game/join", joinRequest);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ReadErrorAsync(response, "Kunde inte gå med i spelet.");
+                return;
+            }
 
-        var player = await response.Content.ReadFromJsonAsync<Player>();
-        NavManager.NavigateTo($"/lobby/{joinRequest.GameCode}/{player.Id}");
+            var session = await response.Content.ReadFromJsonAsync<PlayerSessionDto>();
+            if (session == null)
+            {
+                errorMessage = "API:t returnerade ingen spelarsession.";
+                return;
+            }
+
+            NavManager.NavigateTo($"/lobby/{session.GameCode}/{session.PlayerId}/{session.PlayerSecret}");
+        }
+        catch (HttpRequestException)
+        {
+            errorMessage = "API:t svarar inte. Kontrollera att TraitorGator.API körs.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static async Task<string> ReadErrorAsync(HttpResponseMessage response, string fallback)
+    {
+        var body = (await response.Content.ReadAsStringAsync()).Trim().Trim('"');
+        return string.IsNullOrWhiteSpace(body) ? fallback : body;
     }
 }

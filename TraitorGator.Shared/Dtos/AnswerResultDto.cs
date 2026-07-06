@@ -2,7 +2,8 @@
 {
     public class AnswerResultDto
     {
-        public string Username { get; set; }
-        public string AnswerText { get; set; }
+        public Guid PlayerId { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string AnswerText { get; set; } = string.Empty;
     }
 }

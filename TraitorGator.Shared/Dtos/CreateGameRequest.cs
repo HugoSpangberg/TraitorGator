@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace TraitorGator.Shared.Dtos;
 
-namespace TraitorGator.Shared.Dtos
+public class CreateGameRequest
 {
-    public class CreateGameRequest
-    {
-        public string Username { get; set; }
-    }
+    public string Username { get; set; } = string.Empty;
+    public int MaxRounds { get; set; } = 3;
 }

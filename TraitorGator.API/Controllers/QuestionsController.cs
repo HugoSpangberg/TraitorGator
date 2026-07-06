@@ -30,9 +30,8 @@ public class QuestionsController : Controller
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetQuestion(Guid id)
+    public IActionResult GetQuestion(Guid id)
     {
-        // Du kan implementera en metod för att hämta en fråga om du vill
-        return Ok("Endpoint för att hämta en fråga ej implementerad än.");
+        return NotFound("Endpoint för att hämta en enskild fråga är inte implementerad.");
     }
 }
