@@ -1,34 +1,39 @@
-﻿@page "/create-game"
-@using System.Text.Json
-@using System.Text.Json.Serialization
-@using TraitorGator.API.Models
+@page "/create-game"
 @using TraitorGator.Shared.Dtos
-@using TraitorGator.Models
 @inject HttpClient Http
 @inject NavigationManager NavManager
 @rendermode InteractiveServer
 
-<div class="d-flex vh-100 align-items-center justify-content-center">
-    <div class="card bg-dark text-light p-4 shadow-sm" style="width: 100%; max-width: 400px;">
-        <h2 class="display-7 text-center mb-3">Skapa nytt spel</h2>
-        <div class="mb-3 text-start">
-            <input id="username" class="form-control form-control-lg" @bind="createRequest.Username" placeholder="Ditt användarnamn" />
-        </div>
+<main class="screen screen--center">
+    <section class="panel panel--narrow">
+        <a class="back-link" href="/">Tillbaka</a>
+        <h1>Skapa spel</h1>
 
-        <button class="btn btn-primary btn-lg w-100 mb-3" @onclick="CreateGameTG">Skapa spel</button>
+        <label class="field">
+            <span>Namn</span>
+            <input @bind="createRequest.Username" @bind:event="oninput" maxlength="24" placeholder="Ditt användarnamn" />
+        </label>
 
-        @if (!string.IsNullOrEmpty(errorMessage))
+        <label class="field">
+            <span>Rundor</span>
+            <input type="number" min="1" max="5" @bind="createRequest.MaxRounds" />
+        </label>
+
+        <button class="button button--primary button--full" disabled="@isLoading" @onclick="CreateGameTG">
+            @(isLoading ? "Skapar..." : "Skapa lobby")
+        </button>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
         {
-            <div class="alert alert-danger text-start">
-                @errorMessage
-            </div>
+            <p class="alert alert--error">@errorMessage</p>
         }
-    </div>
-</div>
+    </section>
+</main>
 
 @code {
-    private CreateGameRequest createRequest = new();
-    private string errorMessage;
+    private readonly CreateGameRequest createRequest = new() { MaxRounds = 3 };
+    private string? errorMessage;
+    private bool isLoading;
 
     private async Task CreateGameTG()
     {
@@ -40,43 +45,38 @@
             return;
         }
 
-        // 1) Skapa spelet
-        var createResponse = await Http.PostAsync("api/game/create", null);
-        if (!createResponse.IsSuccessStatusCode)
+        isLoading = true;
+        try
         {
-            errorMessage = "Fel vid skapande av spel.";
-            return;
-        }
-
-        // 2) Läs in GameRound
-        var game = await createResponse.Content.ReadFromJsonAsync<GameRound>(new JsonSerializerOptions
+            var response = await Http.PostAsJsonAsync("api/game/create", createRequest);
+            if (!response.IsSuccessStatusCode)
             {
-                ReferenceHandler = ReferenceHandler.Preserve,
-                PropertyNameCaseInsensitive = true
-            });
-        if (game == null)
-        {
-            errorMessage = "Kunde inte läsa in spelet.";
-            return;
-        }
+                errorMessage = await ReadErrorAsync(response, "Kunde inte skapa spelet.");
+                return;
+            }
 
-        // 3) Gör join-anrop
-        var joinRequest = new JoinGameRequest
+            var session = await response.Content.ReadFromJsonAsync<PlayerSessionDto>();
+            if (session == null)
             {
-                GameCode = game.GameCode,
-                Username = createRequest.Username
-            };
+                errorMessage = "API:t returnerade inget spel.";
+                return;
+            }
 
-        var joinResponse = await Http.PostAsJsonAsync("api/game/join", joinRequest);
-        if (!joinResponse.IsSuccessStatusCode)
-        {
-            var err = await joinResponse.Content.ReadAsStringAsync();
-            errorMessage = $"Fel vid join av spel: {joinResponse.StatusCode}\n{err}";
-            return;
+            NavManager.NavigateTo($"/lobby/{session.GameCode}/{session.PlayerId}/{session.PlayerSecret}");
         }
+        catch (HttpRequestException)
+        {
+            errorMessage = "API:t svarar inte. Kontrollera att TraitorGator.API körs.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
 
-        // 4) Navigera till lobby
-        var player = await joinResponse.Content.ReadFromJsonAsync<Player>();
-        NavManager.NavigateTo($"/lobby/{game.GameCode}/{player.Id}");
+    private static async Task<string> ReadErrorAsync(HttpResponseMessage response, string fallback)
+    {
+        var body = (await response.Content.ReadAsStringAsync()).Trim().Trim('"');
+        return string.IsNullOrWhiteSpace(body) ? fallback : body;
     }
 }

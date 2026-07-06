@@ -2,6 +2,6 @@
 
 public class JoinGameRequest
 {
-    public string GameCode { get; set; }
-    public string Username { get; set; }
+    public string GameCode { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
 }

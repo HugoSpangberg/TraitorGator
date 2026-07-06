@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using TraitorGator.API.Models;
+using Microsoft.AspNetCore.Mvc;
 using TraitorGator.Services.Interfaces;
 using TraitorGator.Shared.Dtos;
 
@@ -7,38 +6,82 @@ namespace TraitorGator.API.Controllers;
 
 [ApiController]
 [Route("api/game")]
-public class GameController(IGameService gameService, IPlayerService playerService) : ControllerBase
+public class GameController : ControllerBase
 {
-    private readonly IGameService _gameService = gameService;
-    private readonly IPlayerService _playerService = playerService;
+    private readonly IGameService _gameService;
+
+    public GameController(IGameService gameService)
+    {
+        _gameService = gameService;
+    }
 
     [HttpPost("create")]
-    public async Task<ActionResult<GameRound>> CreateGameRound()
+    public async Task<ActionResult<PlayerSessionDto>> CreateGame([FromBody] CreateGameRequest request)
     {
-        var round = await _gameService.CreateGameRoundAsync();
-        return Ok(round);
+        try
+        {
+            return Ok(await _gameService.CreateGameAsync(request));
+        }
+        catch (Exception ex)
+        {
+            return ToErrorResult(ex);
+        }
     }
 
     [HttpPost("join")]
-    public async Task<ActionResult<Player>> JoinGame([FromBody] JoinGameRequest request)
+    public async Task<ActionResult<PlayerSessionDto>> JoinGame([FromBody] JoinGameRequest request)
     {
-        var player = await _playerService.AddPlayerToGameAsync(request.GameCode, request.Username);
-        return player != null ? Ok(player) : NotFound("Game not found");
+        try
+        {
+            return Ok(await _gameService.JoinGameAsync(request));
+        }
+        catch (Exception ex)
+        {
+            return ToErrorResult(ex);
+        }
     }
 
     [HttpGet("{gameCode}")]
-    public async Task<ActionResult<GameRound>> GetGameByCode(string gameCode)
+    public async Task<ActionResult<GameStateDto>> GetGameByCode(string gameCode)
     {
-        var round = await _gameService.GetGameRoundByCodeAsync(gameCode);
-        return round != null? Ok(round) : NotFound("Game not found");
+        var state = await _gameService.GetGameStateAsync(gameCode);
+        return state == null ? NotFound("Spelet hittades inte.") : Ok(state);
     }
 
     [HttpPost("{gameCode}/start")]
-    public async Task<IActionResult> StartGame(string gameCode)
+    public async Task<ActionResult<GameStateDto>> StartGame(string gameCode, [FromBody] PlayerActionRequest request)
     {
-        var ok = await _gameService.StartGameAsync(gameCode);
-        return ok ? Ok() : BadRequest("För få spelare för att starta.");
+        try
+        {
+            return Ok(await _gameService.StartGameAsync(gameCode, request));
+        }
+        catch (Exception ex)
+        {
+            return ToErrorResult(ex);
+        }
+    }
+
+    [HttpPost("{gameCode}/next")]
+    public async Task<ActionResult<GameStateDto>> AdvanceRound(string gameCode, [FromBody] PlayerActionRequest request)
+    {
+        try
+        {
+            return Ok(await _gameService.AdvanceRoundAsync(gameCode, request));
+        }
+        catch (Exception ex)
+        {
+            return ToErrorResult(ex);
+        }
+    }
+
+    private ActionResult ToErrorResult(Exception ex)
+    {
+        return ex switch
+        {
+            KeyNotFoundException => NotFound(ex.Message),
+            UnauthorizedAccessException => Unauthorized(ex.Message),
+            ArgumentException or InvalidOperationException => BadRequest(ex.Message),
+            _ => Problem(ex.Message)
+        };
     }
 }
-
-

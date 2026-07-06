@@ -1,36 +1,25 @@
-﻿@page "/"
+@page "/"
 @inject NavigationManager NavManager
 @rendermode InteractiveServer
 <PageTitle>TraitorGator</PageTitle>
 
-<div class="d-flex vh-100 align-items-center justify-content-center">
-  <div class="text-center">
-        <div class="container py-5 text-center">
-            <h1 class="display-4 mb-4">TraitorGator</h1>
-            <p class="lead mb-5">
-                Välkommen till TraitorGator.<br />
-                Utmana dina vänner och avslöja fienden innan det är för sent!
-            </p>
-
-            <div class="d-flex justify-content-center gap-4 flex-wrap">
-                <button class="btn btn-primary btn-lg px-4" @onclick="NavigateToCreateGame">
-                    Skapa nytt spel
-                </button>
-                <button class="btn btn-outline-light btn-lg px-4" @onclick="NavigateToJoinGame">
-                    Gå med i spel
-                </button>
-            </div>
+<main class="screen screen--center">
+    <section class="hero">
+        <img class="brand-mark" src="/brand-mark.svg" alt="" />
+        <p class="eyebrow">Social deduction</p>
+        <h1>TraitorGator</h1>
+        <p class="lead">
+            Svara på nästan samma fråga, jämför svaren och rösta ut spelaren som försöker smälta in.
+        </p>
+        <div class="actions">
+            <button class="button button--primary" @onclick="NavigateToCreateGame">Skapa spel</button>
+            <button class="button button--secondary" @onclick="NavigateToJoinGame">Gå med</button>
         </div>
-    </div>
-</div>
+    </section>
+</main>
 
 @code {
-    private void NavigateToCreateGame()
-    {
-        NavManager.NavigateTo("/create-game");
-    }
-    private void NavigateToJoinGame()
-    {
-        NavManager.NavigateTo("/join-game");
-    }
+    private void NavigateToCreateGame() => NavManager.NavigateTo("/create-game");
+
+    private void NavigateToJoinGame() => NavManager.NavigateTo("/join-game");
 }
